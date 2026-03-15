@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mindful Minute Classroom Companion</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { font-family: 'Nunito', sans-serif; }
+body { background: #f0f7ff; overflow-x: hidden; }
+
+@keyframes breatheIn {
+  0% { transform: scale(0.6); opacity: 0.5; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+@keyframes breatheOut {
+  0% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.6); opacity: 0.5; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 0.3; }
+  100% { transform: scale(0.8); opacity: 0.8; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fadeInUp 0.5s ease-out; }
+.breathe-circle { transition: all 0.3s ease; }
+.breathe-in .breathe-circle { animation: breatheIn 4s ease-in-out forwards; }
+.breathe-out .breathe-circle { animation: breatheOut 4s ease-in-out forwards; }
+.float-anim { animation: float 3s ease-in-out infinite; }
+.pulse-ring-anim { animation: pulse-ring 2s ease-in-out infinite; }
+
+.noise-bar { transition: width 0.3s ease, background-color 0.3s ease; }
+
+.tab-active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+}
+
+.card-shadow {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.gradient-btn {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  transition: all 0.2s ease;
+}
+.gradient-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+.gradient-btn:active { transform: translateY(0); }
+
+.gradient-btn-green {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  transition: all 0.2s ease;
+}
+.gradient-btn-orange {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  transition: all 0.2s ease;
+}
+.gradient-btn-red {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  transition: all 0.2s ease;
+}
+
+.mood-btn {
+  transition: all 0.2s ease;
+  min-height: 56px;
+}
+.mood-btn:active { transform: scale(0.95); }
+.mood-btn.selected { ring: 3px; transform: scale(1.05); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 10px; }
+
+.exercise-visual {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  position: relative;
+}
+
+.exercise-visual .ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 3px solid rgba(99,102,241,0.2);
+}
+
+.emotion-indicator {
+  width: 12px; height: 12px; border-radius: 50%;
+  display: inline-block; margin-right: 6px;
+}
+
+.onboarding-overlay {
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+}
+</style>
+</head>
+<body class="min-h-screen">
+
+<div id="app" class="max-w-md mx-auto pb-24 relative">
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-indigo-100 px-4 py-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🧘‍♂️</span>
+        <div>
+          <h1 class="text-lg font-extrabold text-indigo-700 leading-tight">Mindful Minute</h1>
+          <p class="text-xs text-indigo-400 font-semibold">Classroom Companion</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="showAnalytics()" class="p-2 rounded-xl hover:bg-indigo-50 transition" title="Analytics">
+          <span class="text-xl">📊</span>
+        </button>
+        <button onclick="showSettings()" class="p-2 rounded-xl hover:bg-indigo-50 transition" title="Settings">
+          <span class="text-xl">⚙️</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Onboarding -->
+  <div id="onboarding" class="hidden onboarding-overlay fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full animate-fade-in-up card-shadow">
+      <div class="text-center">
+        <div class="text-5xl mb-4">🌈</div>
+        <h2 class="text-xl font-extrabold text-indigo-700 mb-2">Welcome, Teacher! 👋</h2>
+        <p class="text-gray-600 text-sm mb-4">Mindful Minute helps you bring calm to your classroom with <strong>adaptive mindfulness exercises</strong> that respond to how your students are feeling right now.</p>
+        <div class="space-y-3 text-left bg-indigo-50 rounded-2xl p-4 mb-4">
+          <div class="flex items-start gap-2"><span>🎙️</span><span class="text-sm text-gray-700">Uses your mic to sense classroom noise levels (no audio is recorded!)</span></div>
+          <div class="flex items-start gap-2"><span>😊</span><span class="text-sm text-gray-700">Quick mood check-in to assess emotional climate</span></div>
+          <div class="flex items-start gap-2"><span>✨</span><span class="text-sm text-gray-700">AI generates perfect-fit exercises in seconds</span></div>
+          <div class="flex items-start gap-2"><span>📊</span><span class="text-sm text-gray-700">Track patterns & get follow-up suggestions</span></div>
+        </div>
+        <div class="space-y-2">
+          <label class="flex items-center gap-2 text-sm text-gray-600">
+            <input type="text" id="teacherName" placeholder="Your name (optional)" class="flex-1 border border-indigo-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          </label>
+          <label class="flex items-center gap-2 text-sm text-gray-600">
+            <input type="text" id="gradeLevel" placeholder="Grade level (e.g., 3rd)" class="flex-1 border border-indigo-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          </label>
+          <label class="flex items-center gap-2 text-sm text-gray-600">
+            <input type="number" id="classSize" placeholder="Class size (e.g., 25)" class="flex-1 border border-indigo-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" min="1" max="50">
+          </label>
+        </div>
+        <button onclick="completeOnboarding()" class="gradient-btn text-white font-bold py-3 px-8 rounded-2xl w-full mt-4 text-base">Let's Get Started! 🎉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <main class="px-4 pt-4 space-y-4" id="mainContent">
+
+    <!-- Classroom State Card -->
+    <div class="bg-white rounded-3xl p-5 card-shadow animate-fade-in-up">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-bold text-gray-800 text-base">🏫 Classroom Climate</h2>
+        <span id="classroomStateLabel" class="text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-700">Calm</span>
+      </div>
+
+      <!-- Noise Level -->
+      <div class="mb-3">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs text-gray-500 font-semibold">🔊 Noise Level</span>
+          <span id="noiseValue" class="text-xs font-bold text-gray-700">--</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+          <div id="noiseBar" class="noise-bar h-full rounded-full bg-green-400" style="width:10%"></div>
+        </div>
+      </div>
+
+      <!-- Quick Mood Check -->
+      <div>
+        <p class="text-xs text-gray-500 font-semibold mb-2">😊 How's the class feeling?</p>
+        <div class="grid grid-cols-5 gap-2">
+          <button onclick="setMood('calm')" class="mood-btn rounded-2xl bg-green-50 border-2 border-green-200 flex flex-col items-center justify-center p-2" data-mood="calm">
+            <span class="text-2xl">😌</span>
+            <span class="text-[10px] font-bold text-green-700 mt-1">Calm</span>
+          </button>
+          <button onclick="setMood('happy')" class="mood-btn rounded-2xl bg-yellow-50 border-2 border-yellow-200 flex flex-col items-center justify-center p-2" data-mood="happy">
+            <span class="text-2xl">😄</span>
+            <span class="text-[10px] font-bold text-yellow-700 mt-1">Happy</span>
+          </button>
+          <button onclick="setMood('restless')" class="mood-btn rounded-2xl bg-orange-50 border-2 border-orange-200 flex flex-col items-center justify-center p-2" data-mood="restless">
+            <span class="text-2xl">😬</span>
+            <span class="text-[10px] font-bold text-orange-700 mt-1">Restless</span>
+          </button>
+          <button onclick="setMood('anxious')" class="mood-btn rounded-2xl bg-purple-50 border-2 border-purple-200 flex flex-col items-center justify-center p-2" data-mood="anxious">
+            <span class="text-2xl">😰</span>
+            <span class="text-[10px] font-bold text-purple-700 mt-1">Anxious</span>
+          </button>
+          <button onclick="setMood('upset')" class="mood-btn rounded-2xl bg-red-50 border-2 border-red-200 flex flex-col items-center justify-center p-2" data-mood="upset">
+            <span class="text-2xl">😢</span>
+            <span class="text-[10px] font-bold text-red-700 mt-1">Upset</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BIG ACTION BUTTON -->
+    <button id="mainActionBtn" onclick="generateExercise()" class="gradient-btn w-full text-white font-extrabold py-5 rounded-3xl text-lg card-shadow flex items-center justify-center gap-3 animate-fade-in-up">
+      <span class="text-3xl float-anim inline-block">✨</span>
+      <span>Start Mindful Minute</span>
+    </button>
+
+    <!-- Quick Exercises -->
+    <div class="bg-white rounded-3xl p-5 card-shadow animate-fade-in-up">
+      <h2 class="font-bold text-gray-800 text-base mb-3">⚡ Quick Exercises</h2>
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="startQuickExercise('breathing')" class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 text-left hover:bg-blue-100 transition">
+          <span class="text-2xl block mb-1">🌬️</span>
+          <span class="font-bold text-blue-800 text-sm block">Belly Breathing</span>
+          <span class="text-[10px] text-blue-500">1 min • Calming</span>
+        </button>
+        <button onclick="startQuickExercise('grounding')" class="bg-green-50 border-2 border-green-200 rounded-2xl p-4 text-left hover:bg-green-100 transition">
+          <span class="text-2xl block mb-1">🌳</span>
+          <span class="font-bold text-green-800 text-sm block">5-4-3-2-1 Senses</span>
+          <span class="text-[10px] text-green-500">2 min • Grounding</span>
+        </button>
+        <button onclick="startQuickExercise('movement')" class="bg-orange-50 border-2 border-orange-200 rounded-2xl p-4 text-left hover:bg-orange-100 transition">
+          <span class="text-2xl block mb-1">🦋</span>
+          <span class="font-bold text-orange-800 text-sm block">Butterfly Taps</span>
+          <span class="text-[10px] text-orange-500">1 min • Energy release</span>
+        </button>
+        <button onclick="startQuickExercise('visualization')" class="bg-purple-50 border-2 border-purple-200 rounded-2xl p-4 text-left hover:bg-purple-100 transition">
+          <span class="text-2xl block mb-1">🌈</span>
+          <span class="font-bold text-purple-800 text-sm block">Rainbow Calm</span>
+          <span class="text-[10px] text-purple-500">2 min • Visualization</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Recent Sessions -->
+    <div id="recentSessions" class="bg-white rounded-3xl p-5 card-shadow animate-fade-in-up">
+      <h2 class="font-bold text-gray-800 text-base mb-3">📝 Recent Sessions</h2>
+      <div id="sessionList" class="space-y-2">
+        <p class="text-sm text-gray-400 text-center py-4">No sessions yet. Start your first Mindful Minute! 🌟</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Exercise Screen (hidden by default) -->
+  <div id="exerciseScreen" class="hidden fixed inset-0 z-[90] bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-400 flex flex-col items-center justify-center p-6">
+    <button onclick="exitExercise()" class="absolute top-4 right-4 text-white/80 hover:text-white bg-white/20 rounded-full w-10 h-10 flex items-center justify-center text-lg font-bold backdrop-blur">✕</button>
+
+    <div id="exerciseContent" class="text-center w-full max-w-sm">
+      <!-- Timer -->
+      <div id="exerciseTimer" class="text-white/80 text-sm font-bold mb-4">⏱️ 0:00</div>
+
+      <!-- Visual -->
+      <div id="exerciseVisual" class="exercise-visual mx-auto mb-6 bg-white/20 backdrop-blur-sm">
+        <div class="ring w-[250px] h-[250px] pulse-ring-anim"></div>
+        <div class="ring w-[300px] h-[300px] pulse-ring-anim" style="animation-delay: 0.5s"></div>
+        <span id="exerciseEmoji" class="text-7xl breathe-circle">🌬️</span>
+      </div>
+
+      <!-- Instruction -->
+      <h2 id="exerciseTitle" class="text-white text-2xl font-extrabold mb-2">Belly Breathing</h2>
+      <p id="exerciseInstruction" class="text-white/90 text-lg font-semibold mb-6">Breathe in slowly...</p>
+
+      <!-- Step indicators -->
+      <div id="exerciseSteps" class="flex justify-center gap-2 mb-6"></div>
+
+      <!-- Progress bar -->
+      <div class="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+        <div id="exerciseProgress" class="h-full bg-white rounded-full transition-all duration-1000" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics Screen -->
+  <div id="analyticsScreen" class="hidden fixed inset-0 z-[90] bg-white overflow-y-auto">
+    <div class="max-w-md mx-auto p-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-extrabold text-indigo-700">📊 Class Analytics</h2>
+        <button onclick="hideAnalytics()" class="p-2 rounded-xl hover:bg-indigo-50">✕</button>
+      </div>
+      <div id="analyticsContent" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- Settings Screen -->
+  <div id="settingsScreen" class="hidden fixed inset-0 z-[90] bg-white overflow-y-auto">
+    <div class="max-w-md mx-auto p-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-extrabold text-indigo-700">⚙️ Settings</h2>
+        <button onclick="hideSettings()" class="p-2 rounded-xl hover:bg-indigo-50">✕</button>
+      </div>
+      <div class="space-y-4">
+        <div class="bg-indigo-50 rounded-2xl p-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">👩‍🏫 Teacher Name</label>
+          <input type="text" id="settingsName" class="w-full border border-indigo-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:outline-none" placeholder="Your name">
+        </div>
+        <div class="bg-indigo-50 rounded-2xl p-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">📚 Grade Level</label>
+          <input type="text" id="settingsGrade" class="w-full border border-indigo-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:outline-none" placeholder="e.g., 3rd">
+        </div>
+        <div class="bg-indigo-50 rounded-2xl p-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">👥 Class Size</label>
+          <input type="number" id="settingsClassSize" class="w-full border border-indigo-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:outline-none" placeholder="25" min="1" max="50">
+        </div>
+        <div class="bg-indigo-50 rounded-2xl p-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">⏱️ Default Duration</label>
+          <select id="settingsDuration" class="w-full border border-indigo-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:outline-none">
+            <option value="1">1 minute</option>
+            <option value="2">2 minutes</option>
+            <option value="3" selected>3 minutes</option>
+            <option value="5">5 minutes</option>
+          </select>
+        </div>
+        <div class="bg-indigo-50 rounded-2xl p-4">
+          <label class="flex items-center justify-between">
+            <span class="text-sm font-bold text-gray-700">🔊 Sound Effects</span>
+            <input type="checkbox" id="settingsSound" checked class="w-5 h-5 text-indigo-600 rounded">
+          </label>
+        </div>
+        <button onclick="saveSettings()" class="gradient-btn text-white font-bold py-3 w-full rounded-2xl">Save Settings 💾</button>
+        <button onclick="clearAllData()" class="bg-red-50 text-red-600 font-bold py-3 w-full rounded-2xl border-2 border-red-200 hover:bg-red-100 transition">Clear All Data 🗑️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Follow-up Panel -->
+  <div id="followUpPanel" class="hidden fixed inset-0 z-[90] bg-white overflow-y-auto">
+    <div class="max-w-md mx-auto p-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-extrabold text-indigo-700">💡 Follow-Up Suggestions</h2>
+        <button onclick="hideFollowUp()" class="p-2 rounded-xl hover:bg-indigo-50">✕</button>
+      </div>
+      <div id="followUpContent" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="hidden fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm flex items-center justify-center">
+    <div class="bg-white rounded-3xl p-8 text-center card-shadow max-w-xs">
+      <div class="text-5xl mb-4 float-anim">🧠</div>
+      <p id="loadingText" class="font-bold text-indigo-700">AI is creating your exercise...</p>
+      <div class="mt-4 flex justify-center gap-1">
+        <div class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0s"></div>
+        <div class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0.1s"></div>
+        <div class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0.2s"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] bg-gray-900 text-white px-6 py-3 rounded-2xl text-sm font-semibold shadow-lg"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // Global AI tracking
+  window.aiTotalInputTokens = 0;
+  window.aiTotalOutputTokens = 0;
+  window.aiTotalTime = 0;
+  window.aiTimeByAlias = {};
+
+  // State
+  let state = {
+    teacherName: '',
+    gradeLevel: '',
+    classSize: 25,
+    defaultDuration: 3,
+    soundEnabled: true,
+    currentMood: 'calm',
+    noiseLevel: 0,
+    sessions: [],
+    onboardingDone: false
+  };
+
+  let audioContext = null;
+  let analyser = null;
+  let micStream = null;
+  let noiseInterval = null;
+  let exerciseInterval = null;
+  let exerciseTimeout = null;
+  let currentExerciseData = null;
+
+  // Load state
+  function loadState() {
+    try {
+      const saved = localStorage.getItem('mindful_minute_state');
+      if (saved) {
+        state = { ...state, ...JSON.parse(saved) };
+      }
+    } catch(e) {}
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem('mindful_minute_state', JSON.stringify(state));
+    } catch(e) {}
+  }
+
+  // Init
+  loadState();
+
+  if (!state.onboardingDone) {
+    document.getElementById('onboarding').classList.remove('hidden');
+  }
+
+  updateMoodButtons();
+  renderSessions();
+  initMicrophone();
+
+  // Onboarding
+  window.completeOnboarding = function() {
+    state.teacherName = document.getElementById('teacherName').value || 'Teacher';
+    state.gradeLevel = document.getElementById('gradeLevel').value || '3rd';
+    state.classSize = parseInt(document.getElementById('classSize').value) || 25;
+    state.onboardingDone = true;
+    saveState();
+    document.getElementById('onboarding').classList.add('hidden');
+    showToast('Welcome, ' + state.teacherName + '! 🌟');
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+  };
+
+  // Mood
+  window.setMood = function(mood) {
+    state.currentMood = mood;
+    saveState();
+    updateMoodButtons();
+    updateClassroomState();
+  };
+
+  function updateMoodButtons() {
+    document.querySelectorAll('.mood-btn').forEach(btn => {
+      const m = btn.getAttribute('data-mood');
+      btn.classList.toggle('ring-4', m === state.currentMood);
+      btn.classList.toggle('ring-indigo-400', m === state.currentMood);
+      btn.classList.toggle('scale-105', m === state.currentMood);
+    });
+  }
+
+  function updateClassroomState() {
+    const label = document.getElementById('classroomStateLabel');
+    const noise = state.noiseLevel;
+    const mood = state.currentMood;
+
+    let classState = 'Calm';
+    let stateClass = 'bg-green-100 text-green-700';
+
+    if (mood === 'upset' || mood === 'anxious' || noise > 70) {
+      classState = 'Needs Attention';
+      stateClass = 'bg-red-100 text-red-700';
+    } else if (mood === 'restless' || noise > 50) {
+      classState = 'Restless';
+      stateClass = 'bg-orange-100 text-orange-700';
+    } else if (mood === 'happy' && noise < 40) {
+      classState = 'Focused & Happy';
+      stateClass = 'bg-green-100 text-green-700';
+    } else if (mood === 'calm') {
+      classState = 'Calm';
+      stateClass = 'bg-green-100 text-green-700';
+    }
+
+    label.textContent = classState;
+    label.className = 'text-xs font-bold px-3 py-1 rounded-full ' + stateClass;
+  }
+
+  // Microphone
+  async function initMicrophone() {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(micStream);
+      source.connect(analyser);
+      analyser.fftSize = 256;
+
+      noiseInterval = setInterval(() => {
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+        const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        const normalized = Math.min(100, Math.round(avg * 1.5));
+        state.noiseLevel = normalized;
+
+        document.getElementById('noiseValue').textContent = normalized + '%';
+        const bar = document.getElementById('noiseBar');
+        bar.style.width = normalized + '%';
+
+        if (normalized < 30) {
+          bar.className = 'noise-bar h-full rounded-full bg-green-400';
+        } else if (normalized < 60) {
+          bar.className = 'noise-bar h-full rounded-full bg-yellow-400';
+        } else {
+          bar.className = 'noise-bar h-full rounded-full bg-red-400';
+        }
+
+        updateClassroomState();
+      }, 500);
+    } catch(e) {
+      document.getElementById('noiseValue').textContent = 'No mic';
+      console.log('Mic not available:', e);
+    }
+  }
+
+  // AI Call helper
+  async function callAI(alias, params, retries = 3) {
+    const startTime = Date.now();
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const response = await fetch('https://16504442930.work/run_prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ alias, params })
+        });
+
+        if (!response.ok) {
+          throw new Error('API returned status ' + response.status);
+        }
+
+        const data = await response.json();
+        const elapsed = Date.now() - startTime;
+
+        // Track tokens/time
+        if (data.input_tokens) window.aiTotalInputTokens += data.input_tokens;
+        if (data.output_tokens) window.aiTotalOutputTokens += data.output_tokens;
+        window.aiTotalTime += elapsed;
+        if (!window.aiTimeByAlias[alias]) window.aiTimeByAlias[alias] = 0;
+        window.aiTimeByAlias[alias] += elapsed;
+
+        return data;
+      } catch(err) {
+        console.error(`AI call attempt ${attempt + 1} failed:`, err);
+        if (attempt === retries - 1) {
+          // Format error with AI
+          try {
+            const errResp = await fetch('https://16504442930.work/run_prompt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                alias: 'genericAI',
+                params: {
+                  prompt: `Reformat this error message to be user-friendly for a teacher using a mindfulness app. Empower them to fix it. Error: ${err.message}. Full response: ${JSON.stringify(err)}. Return JSON with key "message" as a string.`
+                }
+              })
+            });
+            const errData = await errResp.json();
+            throw new Error(errData.message || err.message);
+          } catch(e2) {
+            throw new Error('Something went wrong connecting to our mindfulness AI. Please check your internet connection and try again. 🌐');
+          }
+        }
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+  }
+
+  // Generate AI Exercise
+  window.generateExercise = async function() {
+    showLoading('AI is reading the room and creating a perfect exercise...');
+
+    try {
+      const prompt = `You are an expert child psychologist and mindfulness instructor for elementary school classrooms.
+
+Current classroom state:
+- Noise level: ${state.noiseLevel}% (0=silent, 100=very loud)
+- Reported mood: ${state.currentMood}
+- Grade level: ${state.gradeLevel || '3rd grade'}
+- Class size: ${state.classSize || 25} students
+- Desired duration: ${state.defaultDuration || 3} minutes
+
+Based on this real-time classroom data, generate a perfectly tailored mindfulness exercise.
+
+Return EXACTLY this JSON structure:
+{
+  "title": string (short catchy name, max 30 chars),
+  "emoji": string (single emoji representing the exercise),
+  "type": string (one of: "breathing", "grounding", "movement", "visualization"),
+  "duration_seconds": number (integer, total duration in seconds),
+  "steps": [
+    {
+      "instruction": string (clear, kid-friendly direction, max 80 chars),
+      "duration_seconds": number (integer, how long this step lasts),
+      "emoji": string (single emoji for this step),
+      "breathe_type": string (one of: "in", "out", "hold", "none")
+    }
+  ] (array of 4-8 step objects),
+  "teacher_note": string (brief tip for the teacher, max 150 chars),
+  "follow_up_suggestions": [string] (array of 3 strings, each max 100 chars, actionable follow-ups for students needing extra support),
+  "rationale": string (1 sentence explaining why this exercise fits the current state, max 150 chars)
+}
+
+Make the exercise engaging, age-appropriate, and directly responsive to the noise/mood state. If the class is restless or noisy, start with movement then transition to calm. If anxious, use grounding. If calm, deepen the calm. Use imaginative, playful language kids love.`;
+
+      const data = await callAI('genericAI', { prompt });
+
+      currentExerciseData = data;
+      hideLoading();
+      startExerciseFromAI(data);
+
+    } catch(err) {
+      hideLoading();
+      showToast(err.message || 'Could not generate exercise. Try again!');
+    }
+  };
+
+  function startExerciseFromAI(data) {
+    const screen = document.getElementById('exerciseScreen');
+    screen.classList.remove('hidden');
+
+    const title = data.title || 'Mindful Moment';
+    const emoji = data.emoji || '🧘';
+    const steps = data.steps || [];
+    const totalDuration = data.duration_seconds || 60;
+
+    document.getElementById('exerciseTitle').textContent = title;
+    document.getElementById('exerciseEmoji').textContent = emoji;
+
+    // Create step indicators
+    const stepsContainer = document.getElementById('exerciseSteps');
+    stepsContainer.innerHTML = steps.map((s, i) =>
+      `<div class="w-3 h-3 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/30'}" data-step="${i}"></div>`
+    ).join('');
+
+    let currentStep = 0;
+    let elapsed = 0;
+    const startTime = Date.now();
+
+    function showStep(idx) {
+      if (idx >= steps.length) {
+        finishExercise(data);
+        return;
+      }
+
+      const step = steps[idx];
+      document.getElementById('exerciseInstruction').textContent = step.instruction;
+      document.getElementById('exerciseEmoji').textContent = step.emoji || emoji;
+
+      // Update step indicators
+      stepsContainer.querySelectorAll('div').forEach((dot, i) => {
+        dot.className = `w-3 h-3 rounded-full ${i === idx ? 'bg-white' : i < idx ? 'bg-white/60' : 'bg-white/30'}`;
+      });
+
+      // Breathing animation
+      const visual = document.getElementById('exerciseVisual');
+      visual.classList.remove('breathe-in', 'breathe-out');
+      if (step.breathe_type === 'in') {
+        setTimeout(() => visual.classList.add('breathe-in'), 50);
+      } else if (step.breathe_type === 'out') {
+        setTimeout(() => visual.classList.add('breathe-out'), 50);
+      }
+
+      // Play tone if enabled
+      if (state.soundEnabled) playTone(step.breathe_type);
+
+      exerciseTimeout = setTimeout(() => {
+        currentStep++;
+        showStep(currentStep);
+      }, (step.duration_seconds || 5) * 1000);
+    }
+
+    showStep(0);
+
+    exerciseInterval = setInterval(() => {
+      elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      document.getElementById('exerciseTimer').textContent = `⏱️ ${mins}:${secs.toString().padStart(2, '0')}`;
+
+      const progress = Math.min(100, (elapsed / totalDuration) * 100);
+      document.getElementById('exerciseProgress').style.width = progress + '%';
+    }, 1000);
+  }
+
+  function finishExercise(data) {
+    clearInterval(exerciseInterval);
+    clearTimeout(exerciseTimeout);
+
+    // Save session
+    const session = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      title: data.title || 'Mindful Moment',
+      emoji: data.emoji || '🧘',
+      type: data.type || 'breathing',
+      mood: state.currentMood,
+      noise: state.noiseLevel,
+      duration: data.duration_seconds || 60,
+      teacherNote: data.teacher_note || '',
+      followUps: data.follow_up_suggestions || [],
+      rationale: data.rationale || ''
+    };
+
+    state.sessions.unshift(session);
+    if (state.sessions.length > 50) state.sessions = state.sessions.slice(0, 50);
+    saveState();
+
+    // Show completion
+    document.getElementById('exerciseTitle').textContent = 'Great Job! 🌟';
+    document.getElementById('exerciseInstruction').textContent = 'The class did amazing!';
+    document.getElementById('exerciseEmoji').textContent = '⭐';
+    document.getElementById('exerciseProgress').style.width = '100%';
+    document.getElementById('exerciseSteps').innerHTML = '';
+
+    confetti({ particleCount: 80, spread: 60, origin: { y: 0.5 } });
+
+    setTimeout(() => {
+      document.getElementById('exerciseScreen').classList.add('hidden');
+      renderSessions();
+      if (data.follow_up_suggestions && data.follow_up_suggestions.length > 0) {
+        showFollowUpFromData(data);
+      }
+      showToast('Session saved! Check analytics for insights 📊');
+    }, 2500);
+  }
+
+  // Quick exercises
+  const quickExercises = {
+    breathing: {
+      title: 'Belly Breathing',
+      emoji: '🌬️',
+      type: 'breathing',
+      duration_seconds: 60,
+      steps: [
+        { instruction: 'Put your hands on your belly 🤲', duration_seconds: 5, emoji: '🤲', breathe_type: 'none' },
+        { instruction: 'Breathe IN through your nose... fill your belly like a balloon 🎈', duration_seconds: 4, emoji: '🎈', breathe_type: 'in' },
+        { instruction: 'Hold it gently...', duration_seconds: 3, emoji: '✨', breathe_type: 'hold' },
+        { instruction: 'Breathe OUT slowly through your mouth... let the balloon deflate', duration_seconds: 5, emoji: '🌬️', breathe_type: 'out' },
+        { instruction: 'Breathe IN again... big balloon belly! 🎈', duration_seconds: 4, emoji: '🎈', breathe_type: 'in' },
+        { instruction: 'Hold...', duration_seconds: 3, emoji: '✨', breathe_type: 'hold' },
+        { instruction: 'Breathe OUT... nice and slow 🌬️', duration_seconds: 5, emoji: '🌬️', breathe_type: 'out' },
+        { instruction: 'One more time... Breathe IN deeply 🎈', duration_seconds: 4, emoji: '🎈', breathe_type: 'in' },
+        { instruction: 'Hold gently...', duration_seconds: 3, emoji: '✨', breathe_type: 'hold' },
+        { instruction: 'And breathe OUT completely 🌬️', duration_seconds: 5, emoji: '🌬️', breathe_type: 'out' },
+        { instruction: 'Great job! Notice how calm your body feels 😌', duration_seconds: 5, emoji: '😌', breathe_type: 'none' },
+      ],
+      teacher_note: 'Watch for students who struggle with deep breaths - they may need individual support.',
+      follow_up_suggestions: ['Practice belly breathing during transitions', 'Pair struggling students with calm buddies', 'Try adding counting to breaths next time'],
+      rationale: 'Belly breathing activates the parasympathetic nervous system for immediate calm.'
+    },
+    grounding: {
+      title: '5-4-3-2-1 Senses',
+      emoji: '🌳',
+      type: 'grounding',
+      duration_seconds: 120,
+      steps: [
+        { instruction: 'Let\'s use our senses! Sit comfortably and look around 👀', duration_seconds: 8, emoji: '👀', breathe_type: 'none' },
+        { instruction: 'Name 5 things you can SEE 👁️ (colors, shapes, objects)', duration_seconds: 20, emoji: '👁️', breathe_type: 'none' },
+        { instruction: 'Now find 4 things you can TOUCH 🤚 (desk, clothes, air)', duration_seconds: 20, emoji: '🤚', breathe_type: 'none' },
+        { instruction: 'Listen for 3 things you can HEAR 👂 (birds, breathing, hum)', duration_seconds: 20, emoji: '👂', breathe_type: 'none' },
+        { instruction: 'Notice 2 things you can SMELL 👃 (paper, fresh air)', duration_seconds: 15, emoji: '👃', breathe_type: 'none' },
+        { instruction: 'Think of 1 thing you can TASTE 👅 (breakfast, water)', duration_seconds: 10, emoji: '👅', breathe_type: 'none' },
+        { instruction: 'Take a deep breath in... 🌬️', duration_seconds: 4, emoji: '🎈', breathe_type: 'in' },
+        { instruction: 'And breathe out... You\'re grounded and present! 🌳', duration_seconds: 5, emoji: '🌳', breathe_type: 'out' },
+      ],
+      teacher_note: 'Great for after recess or when students seem scattered. Encourages present-moment awareness.',
+      follow_up_suggestions: ['Create a "sense journal" for students to log daily', 'Use grounding before tests or hard tasks', 'Make a classroom "calm corner" with sensory items'],
+      rationale: '5-4-3-2-1 grounding brings attention to the present and reduces anxiety.'
+    },
+    movement: {
+      title: 'Butterfly Taps',
+      emoji: '🦋',
+      type: 'movement',
+      duration_seconds: 60,
+      steps: [
+        { instruction: 'Cross your arms over your chest like a butterfly 🦋', duration_seconds: 5, emoji: '🦋', breathe_type: 'none' },
+        { instruction: 'Now gently tap alternating hands... left, right, left, right', duration_seconds: 10, emoji: '👐', breathe_type: 'none' },
+        { instruction: 'Keep tapping slowly... think of a happy place 🏖️', duration_seconds: 10, emoji: '🏖️', breathe_type: 'none' },
+        { instruction: 'Tap a little faster now, like butterfly wings fluttering ✨', duration_seconds: 10, emoji: '✨', breathe_type: 'none' },
+        { instruction: 'Slow down your taps... nice and gentle 🌸', duration_seconds: 10, emoji: '🌸', breathe_type: 'none' },
+        { instruction: 'Give yourself a butterfly hug 🤗 and breathe in', duration_seconds: 5, emoji: '🤗', breathe_type: 'in' },
+        { instruction: 'Breathe out and relax your arms down 😌', duration_seconds: 5, emoji: '😌', breathe_type: 'out' },
+      ],
+      teacher_note: 'Butterfly taps (bilateral stimulation) help process emotions. Great after stressful events.',
+      follow_up_suggestions: ['Teach students to use butterfly taps independently', 'Pair with positive affirmations during tapping', 'Notice which students resist physical exercises'],
+      rationale: 'Bilateral stimulation calms the nervous system while allowing physical energy release.'
+    },
+    visualization: {
+      title: 'Rainbow Calm',
+      emoji: '🌈',
+      type: 'visualization',
+      duration_seconds: 120,
+      steps: [
+        { instruction: 'Close your eyes and take a deep breath 🌬️', duration_seconds: 5, emoji: '🌬️', breathe_type: 'in' },
+        { instruction: 'Imagine a beautiful RED light surrounding your feet ❤️', duration_seconds: 12, emoji: '❤️', breathe_type: 'none' },
+        { instruction: 'The light turns ORANGE and rises to your knees 🧡', duration_seconds: 12, emoji: '🧡', breathe_type: 'none' },
+        { instruction: 'Now it\'s YELLOW sunshine warming your tummy 💛', duration_seconds: 12, emoji: '💛', breathe_type: 'in' },
+        { instruction: 'GREEN light fills your heart with kindness 💚', duration_seconds: 12, emoji: '💚', breathe_type: 'none' },
+        { instruction: 'BLUE light relaxes your shoulders and arms 💙', duration_seconds: 12, emoji: '💙', breathe_type: 'out' },
+        { instruction: 'PURPLE light gently touches your forehead 💜', duration_seconds: 12, emoji: '💜', breathe_type: 'none' },
+        { instruction: 'A WHITE sparkle covers you head to toe ✨ You are the rainbow!', duration_seconds: 10, emoji: '🌈', breathe_type: 'in' },
+        { instruction: 'Open your eyes slowly... carry the rainbow with you today 🌈', duration_seconds: 8, emoji: '😊', breathe_type: 'out' },
+      ],
+      teacher_note: 'Visualization works best in a quiet space. Dim lights if possible.',
+      follow_up_suggestions: ['Have students draw their rainbow afterwards', 'Ask which color felt most calming', 'Use color-mood connections in classroom decoration'],
+      rationale: 'Color visualization engages imagination and creates a structured calming journey.'
+    }
+  };
+
+  window.startQuickExercise = function(type) {
+    const data = quickExercises[type];
+    if (!data) return;
+    currentExerciseData = data;
+    const screen = document.getElementById('exerciseScreen');
+    screen.classList.remove('hidden');
+    startExerciseFromAI(data);
+  };
+
+  window.exitExercise = function() {
+    clearInterval(exerciseInterval);
+    clearTimeout(exerciseTimeout);
+    document.getElementById('exerciseScreen').classList.add('hidden');
+  };
+
+  // Sound
+  function playTone(type) {
+    if (!state.soundEnabled) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'in') {
+        osc.frequency.setValueAtTime(396, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(528, ctx.currentTime + 0.5);
+      } else if (type === 'out') {
+        osc.frequency.setValueAtTime(528, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(396, ctx.currentTime + 0.5);
+      } else if (type === 'hold') {
+        osc.frequency.setValueAtTime(432, ctx.currentTime);
+      } else {
+        return;
+      }
+
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.6);
+    } catch(e) {}
+  }
+
+  // Sessions
+  function renderSessions() {
+    const list = document.getElementById('sessionList');
+    if (state.sessions.length === 0) {
+      list.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No sessions yet. Start your first Mindful Minute! 🌟</p>';
+      return;
+    }
+
+    list.innerHTML = state.sessions.slice(0, 5).map(s => {
+      const date = new Date(s.date);
+      const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const moodEmojis = { calm: '😌', happy: '😄', restless: '😬', anxious: '😰', upset: '😢' };
+      const mins = Math.round((s.duration || 60) / 60);
+
+      return `
+        <div class="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 cursor-pointer hover:bg-indigo-50 transition" onclick="showSessionDetail(${s.id})">
+          <span class="text-2xl">${s.emoji || '🧘'}</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-sm text-gray-800 truncate">${s.title}</p>
+            <p class="text-xs text-gray-500">${dateStr} at ${timeStr} • ${mins} min • ${moodEmojis[s.mood] || '😊'} ${s.mood}</p>
+          </div>
+          <span class="text-gray-300">›</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.showSessionDetail = function(id) {
+    const session = state.sessions.find(s => s.id === id);
+    if (!session) return;
+
+    showFollowUpFromData({
+      title: session.title,
+      emoji: session.emoji,
+      teacher_note: session.teacherNote,
+      follow_up_suggestions: session.followUps,
+      rationale: session.rationale,
+      type: session.type
+    }, session);
+  };
+
+  // Follow-up panel
+  function showFollowUpFromData(data, session) {
+    const panel = document.getElementById('followUpPanel');
+    const content = document.getElementById('followUpContent');
+
+    content.innerHTML = `
+      <div class="bg-indigo-50 rounded-2xl p-4 text-center">
+        <span class="text-4xl block mb-2">${data.emoji || '🧘'}</span>
+        <h3 class="font-extrabold text-indigo-700 text-lg">${data.title || 'Mindful Moment'}</h3>
+        ${data.rationale ? `<p class="text-sm text-indigo-500 mt-1">${data.rationale}</p>` : ''}
+      </div>
+
+      ${session ? `
+        <div class="bg-gray-50 rounded-2xl p-4">
+          <h4 class="font-bold text-gray-700 text-sm mb-2">📋 Session Details</h4>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p class="text-2xl">${{ calm: '😌', happy: '😄', restless: '😬', anxious: '😰', upset: '😢' }[session.mood] || '😊'}</p>
+              <p class="text-xs text-gray-500">Mood</p>
+            </div>
+            <div>
+              <p class="text-lg font-bold text-gray-700">${session.noise}%</p>
+              <p class="text-xs text-gray-500">Noise</p>
+            </div>
+            <div>
+              <p class="text-lg font-bold text-gray-700">${Math.round((session.duration || 60) / 60)}m</p>
+              <p class="text-xs text-gray-500">Duration</p>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      ${data.teacher_note ? `
+        <div class="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4">
+          <h4 class="font-bold text-yellow-800 text-sm mb-1">👩‍🏫 Teacher Note</h4>
+          <p class="text-sm text-yellow-700">${data.teacher_note}</p>
+        </div>
+      ` : ''}
+
+      ${data.follow_up_suggestions && data.follow_up_suggestions.length > 0 ? `
+        <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-4">
+          <h4 class="font-bold text-green-800 text-sm mb-2">💡 Follow-Up Suggestions</h4>
+          <ul class="space-y-2">
+            ${data.follow_up_suggestions.map(s => `
+              <li class="flex items-start gap-2">
+                <span class="text-green-500 mt-0.5">✓</span>
+                <span class="text-sm text-green-700">${s}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      ` : ''}
+
+      <button onclick="generateFollowUpPlan()" class="gradient-btn text-white font-bold py-3 w-full rounded-2xl">
+        🤖 Get AI-Powered Detailed Plan
+      </button>
+    `;
+
+    panel.classList.remove('hidden');
+  }
+
+  window.hideFollowUp = function() {
+    document.getElementById('followUpPanel').classList.add('hidden');
+  };
+
+  window.generateFollowUpPlan = async function() {
+    showLoading('Creating a personalized follow-up plan...');
+
+    try {
+      const recentMoods = state.sessions.slice(0, 5).map(s => s.mood);
+      const recentNoise = state.sessions.slice(0, 5).map(s => s.noise);
+
+      const prompt = `You are an expert elementary school counselor and mindfulness specialist.
+
+A teacher just completed a mindfulness session with their ${state.gradeLevel || '3rd'} grade class of ${state.classSize || 25} students.
+
+Recent session moods: ${JSON.stringify(recentMoods)}
+Recent noise levels: ${JSON.stringify(recentNoise)}
+Current mood: ${state.currentMood}
+Current noise: ${state.noiseLevel}%
+
+Generate a detailed, actionable follow-up plan. Return EXACTLY this JSON:
+{
+  "summary": string (2-3 sentence overview of the classroom emotional pattern, max 200 chars),
+  "students_needing_support": [
+    {
+      "profile": string (description of student type, e.g. "Students who seemed withdrawn", max 50 chars),
+      "signs": string (what to look for, max 80 chars),
+      "action": string (specific action to take, max 100 chars)
+    }
+  ] (array of 2-3 objects),
+  "next_session_recommendation": string (what exercise to try next and when, max 150 chars),
+  "classroom_environment_tips": [string] (array of 3 strings, each max 80 chars, practical tips),
+  "positive_observation": string (something positive to celebrate, max 100 chars)
+}`;
+
+      const data = await callAI('genericAI', { prompt });
+      hideLoading();
+
+      const content = document.getElementById('followUpContent');
+      content.innerHTML += `
+        <div class="animate-fade-in-up space-y-4 mt-4 border-t-2 border-indigo-100 pt-4">
+          <h3 class="font-extrabold text-indigo-700">🤖 AI Follow-Up Plan</h3>
+
+          ${data.summary ? `
+            <div class="bg-blue-50 rounded-2xl p-4">
+              <p class="text-sm text-blue-800">${data.summary}</p>
+            </div>
+          ` : ''}
+
+          ${data.positive_observation ? `
+            <div class="bg-green-50 rounded-2xl p-4">
+              <p class="text-sm text-green-800">🌟 ${data.positive_observation}</p>
+            </div>
+          ` : ''}
+
+          ${data.students_needing_support ? `
+            <div class="bg-orange-50 border-2 border-orange-200 rounded-2xl p-4">
+              <h4 class="font-bold text-orange-800 text-sm mb-2">🤝 Students Who May Need Support</h4>
+              ${data.students_needing_support.map(s => `
+                <div class="mb-3 last:mb-0">
+                  <p class="font-bold text-sm text-orange-700">${s.profile}</p>
+                  <p class="text-xs text-orange-600">Look for: ${s.signs}</p>
+                  <p class="text-xs text-orange-800 font-semibold mt-1">→ ${s.action}</p>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          ${data.next_session_recommendation ? `
+            <div class="bg-purple-50 rounded-2xl p-4">
+              <h4 class="font-bold text-purple-800 text-sm mb-1">📅 Next Session</h4>
+              <p class="text-sm text-purple-700">${data.next_session_recommendation}</p>
+            </div>
+          ` : ''}
+
+          ${data.classroom_environment_tips ? `
+            <div class="bg-indigo-50 rounded-2xl p-4">
+              <h4 class="font-bold text-indigo-800 text-sm mb-2">🏫 Environment Tips</h4>
+              ${data.classroom_environment_tips.map(t => `
+                <p class="text-sm text-indigo-700 mb-1">• ${t}</p>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+    } catch(err) {
+      hideLoading();
+      showToast(err.message || 'Could not generate plan. Try again!');
+    }
+  };
+
+  // Analytics
+  window.showAnalytics = function() {
+    const screen = document.getElementById('analyticsScreen');
+    const content = document.getElementById('analyticsContent');
+
+    const sessions = state.sessions;
+    const totalSessions = sessions.length;
+    const totalMinutes = Math.round(sessions.reduce((a, s) => a + (s.duration || 60), 0) / 60);
+    const moodCounts = {};
+    sessions.forEach(s => { moodCounts[s.mood] = (moodCounts[s.mood] || 0) + 1; });
+    const avgNoise = sessions.length > 0 ? Math.round(sessions.reduce((a, s) => a + (s.noise || 0), 0) / sessions.length) : 0;
+
+    const moodEmojis = { calm: '😌', happy: '😄', restless: '😬', anxious: '😰', upset: '😢' };
+    const moodColors = { calm: 'bg-green-400', happy: 'bg-yellow-400', restless: 'bg-orange-400', anxious: 'bg-purple-400', upset: 'bg-red-400' };
+
+    // Week chart data
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayStr = d.toLocaleDateString([], { weekday: 'short' });
+      const dateStr = d.toISOString().split('T')[0];
+      const daySessions = sessions.filter(s => s.date.startsWith(dateStr));
+      last7Days.push({ day: dayStr, count: daySessions.length });
+    }
+    const maxCount = Math.max(1, ...last7Days.map(d => d.count));
+
+    content.innerHTML = `
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-indigo-50 rounded-2xl p-4 text-center">
+          <p class="text-2xl font-extrabold text-indigo-700">${totalSessions}</p>
+          <p class="text-xs text-indigo-500 font-semibold">Sessions</p>
+        </div>
+        <div class="bg-green-50 rounded-2xl p-4 text-center">
+          <p class="text-2xl font-extrabold text-green-700">${totalMinutes}</p>
+          <p class="text-xs text-green-500 font-semibold">Minutes</p>
+        </div>
+        <div class="bg-orange-50 rounded-2xl p-4 text-center">
+          <p class="text-2xl font-extrabold text-orange-700">${avgNoise}%</p>
+          <p class="text-xs text-orange-500 font-semibold">Avg Noise</p>
+        </div>
+      </div>
+
+      <!-- Week Chart -->
+      <div class="bg-white rounded-2xl p-4 card-shadow">
+        <h3 class="font-bold text-gray-800 text-sm mb-3">📅 This Week</h3>
+        <div class="flex items-end justify-between gap-1 h-24">
+          ${last7Days.map(d => `
+            <div class="flex-1 flex flex-col items-center">
+              <div class="w-full rounded-t-lg bg-indigo-200 relative" style="height: ${Math.max(4, (d.count / maxCount) * 80)}px">
+                ${d.count > 0 ? `<span class="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-indigo-600">${d.count}</span>` : ''}
+              </div>
+              <span class="text-[10px] text-gray-400 mt-1">${d.day}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Mood Distribution -->
+      <div class="bg-white rounded-2xl p-4 card-shadow">
+        <h3 class="font-bold text-gray-800 text-sm mb-3">😊 Mood Patterns</h3>
+        ${Object.keys(moodCounts).length === 0 ? '<p class="text-sm text-gray-400 text-center">No data yet</p>' :
+          Object.entries(moodCounts).sort((a, b) => b[1] - a[1]).map(([mood, count]) => {
+            const pct = totalSessions > 0 ? Math.round((count / totalSessions) * 100) : 0;
+            return `
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-lg">${moodEmojis[mood] || '😊'}</span>
+                <span class="text-xs font-bold text-gray-600 w-16 capitalize">${mood}</span>
+                <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                  <div class="${moodColors[mood] || 'bg-gray-400'} h-full rounded-full" style="width:${pct}%"></div>
+                </div>
+                <span class="text-xs font-bold text-gray-500 w-10 text-right">${pct}%</span>
+              </div>
+            `;
+          }).join('')
+        }
+      </div>
+
+      <!-- AI Insights Button -->
+      <button onclick="generateInsights()" class="gradient-btn text-white font-bold py-3 w-full rounded-2xl">
+        🧠 Get AI Insights & Recommendations
+      </button>
+
+      <div id="insightsContainer"></div>
+    `;
+
+    screen.classList.remove('hidden');
+  };
+
+  window.hideAnalytics = function() {
+    document.getElementById('analyticsScreen').classList.add('hidden');
+  };
+
+  window.generateInsights = async function() {
+    showLoading('Analyzing classroom patterns...');
+
+    try {
+      const recentSessions = state.sessions.slice(0, 10).map(s => ({
+        mood: s.mood,
+        noise: s.noise,
+        type: s.type,
+        date: s.date
+      }));
+
+      const prompt = `You are an expert child psychologist analyzing classroom mindfulness data for an elementary school teacher.
+
+Teacher: ${state.teacherName || 'Teacher'}
+Grade: ${state.gradeLevel || '3rd'}
+Class size: ${state.classSize || 25}
+Total sessions: ${state.sessions.length}
+Recent sessions: ${JSON.stringify(recentSessions)}
+
+Analyze the patterns and provide insights. Return EXACTLY this JSON:
+{
+  "headline": string (encouraging 1-line headline about their progress, max 60 chars),
+  "pattern_insights": [string] (array of 3 strings, each max 120 chars, key observations about mood/noise patterns),
+  "recommendations": [string] (array of 3 strings, each max 120 chars, specific actionable recommendations),
+  "celebration": string (something positive to celebrate, max 100 chars),
+  "concern_areas": [string] (array of 0-2 strings, each max 100 chars, gentle flags if any patterns need attention)
+}`;
+
+      const data = await callAI('genericAI', { prompt });
+      hideLoading();
+
+      const container = document.getElementById('insightsContainer');
+      container.innerHTML = `
+        <div class="animate-fade-in-up space-y-4">
+          ${data.headline ? `
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl p-4 text-center">
+              <p class="text-white font-extrabold text-lg">✨ ${data.headline}</p>
+            </div>
+          ` : ''}
+
+          ${data.celebration ? `
+            <div class="bg-green-50 rounded-2xl p-4">
+              <p class="text-green-800 font-bold text-sm">🎉 ${data.celebration}</p>
+            </div>
+          ` : ''}
+
+          ${data.pattern_insights ? `
+            <div class="bg-blue-50 rounded-2xl p-4">
+              <h4 class="font-bold text-blue-800 text-sm mb-2">🔍 Pattern Insights</h4>
+              ${data.pattern_insights.map(i => `<p class="text-sm text-blue-700 mb-1">• ${i}</p>`).join('')}
+            </div>
+          ` : ''}
+
+          ${data.recommendations ? `
+            <div class="bg-purple-50 rounded-2xl p-4">
+              <h4 class="font-bold text-purple-800 text-sm mb-2">💡 Recommendations</h4>
+              ${data.recommendations.map(r => `<p class="text-sm text-purple-700 mb-1">→ ${r}</p>`).join('')}
+            </div>
+          ` : ''}
+
+          ${data.concern_areas && data.concern_areas.length > 0 ? `
+            <div class="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4">
+              <h4 class="font-bold text-yellow-800 text-sm mb-2">⚠️ Areas to Watch</h4>
+              ${data.concern_areas.map(c => `<p class="text-sm text-yellow-700 mb-1">• ${c}</p>`).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+    } catch(err) {
+      hideLoading();
+      showToast(err.message || 'Could not generate insights. Try again!');
+    }
+  };
+
+  // Settings
+  window.showSettings = function() {
+    document.getElementById('settingsName').value = state.teacherName || '';
+    document.getElementById('settingsGrade').value = state.gradeLevel || '';
+    document.getElementById('settingsClassSize').value = state.classSize || 25;
+    document.getElementById('settingsDuration').value = state.defaultDuration || 3;
+    document.getElementById('settingsSound').checked = state.soundEnabled !== false;
+    document.getElementById('settingsScreen').classList.remove('hidden');
+  };
+
+  window.hideSettings = function() {
+    document.getElementById('settingsScreen').classList.add('hidden');
+  };
+
+  window.saveSettings = function() {
+    state.teacherName = document.getElementById('settingsName').value;
+    state.gradeLevel = document.getElementById('settingsGrade').value;
+    state.classSize = parseInt(document.getElementById('settingsClassSize').value) || 25;
+    state.defaultDuration = parseInt(document.getElementById('settingsDuration').value) || 3;
+    state.soundEnabled = document.getElementById('settingsSound').checked;
+    saveState();
+    hideSettings();
+    showToast('Settings saved! ✅');
+  };
+
+  window.clearAllData = function() {
+    if (confirm('Are you sure? This will delete all sessions and settings.')) {
+      localStorage.removeItem('mindful_minute_state');
+      state = {
+        teacherName: '',
+        gradeLevel: '',
+        classSize: 25,
+        defaultDuration: 3,
+        soundEnabled: true,
+        currentMood: 'calm',
+        noiseLevel: 0,
+        sessions: [],
+        onboardingDone: false
+      };
+      saveState();
+      hideSettings();
+      renderSessions();
+      showToast('All data cleared 🗑️');
+      document.getElementById('onboarding').classList.remove('hidden');
+    }
+  };
+
+  // UI Helpers
+  function showLoading(text) {
+    document.getElementById('loadingText').textContent = text || 'Loading...';
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+  }
+
+  function hideLoading() {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 3000);
+  }
+
+})();
+</script>
+</body>
+</html>
